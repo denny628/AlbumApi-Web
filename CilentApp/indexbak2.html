@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>ALBUM CEREMONY / ISSUE 091</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@1,900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 基礎設定 */
+        body { background-color: #ffcc00; font-family: 'Inter', sans-serif; overflow-x: hidden; cursor: none; }
+        
+        /* 視覺特效層 */
+        .noise { position: fixed; inset: 0; pointer-events: none; z-index: 9998; opacity: 0.12; mix-blend-mode: multiply; background-image: url('https://grainy-gradients.vercel.app/noise.svg'); }
+        .dots { position: fixed; inset: 0; pointer-events: none; opacity: 0.2; background-image: radial-gradient(circle, #000 1px, transparent 1px); background-size: 24px 24px; z-index: 1; }
+
+        /* 王牛風格按鈕 */
+        .gnu-btn { position: relative; font-weight: 900; font-style: italic; border: 4px solid #000; transition: all 0.1s ease-out; text-transform: uppercase; cursor: none; user-select: none; }
+        .gnu-btn-red { background-color: #dc2626; color: white; box-shadow: 8px 8px 0px 0px rgba(0,0,0,1); }
+        .gnu-btn-red:active { box-shadow: 0 0 0 0; transform: translate(8px, 8px); }
+        .gnu-btn-black { background-color: #000; color: #ffcc00; box-shadow: 8px 8px 0px 0px rgba(220,38,38,1); }
+        .gnu-btn-black:active { box-shadow: 0 0 0 0; transform: translate(8px, 8px); }
+        .gnu-btn-white { background-color: #fff; color: #000; box-shadow: 4px 4px 0px 0px rgba(0,0,0,1); }
+        .gnu-btn-white:hover { background-color: #000; color: #fff; }
+        .gnu-btn-white:active { box-shadow: 0 0 0 0; transform: translate(4px, 4px); }
+
+        /* 表格與 UI */
+        .gnu-table th { border-bottom: 6px solid black; padding: 15px; font-size: 1.2rem; }
+        .gnu-table td { border-bottom: 2px solid black; padding: 12px; background: rgba(255,255,255,0.8); font-weight: 700; }
+        .gnu-table tr:hover td { background: #fff; color: #dc2626; }
+        .modal-bg { background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
+
+        /* 💿 自定義旋轉 CD 游標 */
+        #custom-cursor {
+            position: fixed; top: 0; left: 0; width: 48px; height: 48px; pointer-events: none; z-index: 9999; will-change: transform;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        body:active #custom-cursor { animation: spin 0.5s linear infinite; width: 40px; height: 40px; }
+    </style>
+</head>
+<body class="p-0 m-0">
+    <div class="noise"></div>
+    <div class="dots"></div>
+
+    <div id="custom-cursor">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="48" fill="black" stroke="black" stroke-width="2"/>
+            <circle cx="50" cy="50" r="20" fill="#dc2626" />
+            <circle cx="50" cy="50" r="6" fill="#ffcc00" />
+            <path d="M50 10 A40 40 0 0 1 90 50" stroke="white" stroke-width="2" fill="none" opacity="0.5"/>
+            <path d="M50 90 A40 40 0 0 1 10 50" stroke="white" stroke-width="2" fill="none" opacity="0.5"/>
+        </svg>
+    </div>
+
+    <div id="login-page" class="min-h-screen flex items-center justify-center p-4 relative z-50">
+        <div class="bg-white border-[8px] border-black p-10 shadow-[20px_20px_0px_0px_rgba(220,38,38,1)] w-full max-w-md rotate-[-2deg]">
+            <h2 id="auth-title" class="text-6xl font-black italic mb-8 tracking-tighter">LOGIN</h2>
+            
+            <label class="block font-black text-xs mb-1">NICKNAME</label>
+            <input type="text" id="nickname-input" placeholder="YOUR NAME" class="w-full border-4 border-black p-4 mb-4 text-2xl font-black outline-none focus:bg-[#ffcc00] uppercase">
+            
+            <label class="block font-black text-xs mb-1">PASSWORD</label>
+            <input type="password" id="password-input" placeholder="***" class="w-full border-4 border-black p-4 mb-6 text-2xl font-black outline-none focus:bg-[#ffcc00]">
+            
+            <button onclick="handleAuth()" onmousedown="playBeep(800,400)" class="gnu-btn gnu-btn-black w-full py-4 text-3xl mb-4">ENTER ▶</button>
+
+            <div class="text-center border-t-4 border-black pt-4">
+                <p id="auth-toggle-text" class="text-sm font-black italic">NEW HERE?</p>
+                <button onclick="toggleAuthMode()" class="text-red-600 font-black underline text-lg hover:bg-black hover:text-[#ffcc00] px-2 transition">
+                    CREATE ACCOUNT
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-page" class="hidden relative z-10">
+        <header class="bg-black text-[#ffcc00] py-3 px-6 flex justify-between items-center sticky top-0 z-50 border-b-4 border-white">
+            <span class="text-xs tracking-[0.4em] font-black">ALBUM CEREMONY / ISSUE 091</span>
+            <div class="flex items-center gap-4">
+                <span id="user-display" class="text-sm font-black italic bg-white text-black px-2 py-1 rotate-2">GUEST</span>
+                <button onclick="logout()" class="text-xs border border-[#ffcc00] px-2 py-1 hover:bg-[#ffcc00] hover:text-black transition cursor-none">LOGOUT</button>
+            </div>
+        </header>
+
+        <main class="max-w-6xl mx-auto p-4 md:p-12">
+            <h1 class="text-[6vw] leading-none font-black italic mb-8 uppercase">
+                <span class="bg-black text-white px-2">Data</span> Collection
+            </h1>
+
+            <div class="bg-white border-[6px] border-black p-6 mb-12 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] rotate-1 relative group">
+                <div class="absolute -top-4 -left-4 bg-red-600 text-white font-black italic px-4 py-1 border-2 border-black rotate-[-3deg] text-lg">
+                    QUERY / CONTROL
+                </div>
+
+                <div class="flex flex-wrap gap-6 items-end">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block font-black text-sm mb-2 italic bg-black text-white w-max px-2">KEYWORD</label>
+                        <input type="text" id="search-input" class="w-full bg-gray-100 border-b-4 border-black p-2 text-2xl font-black italic outline-none focus:border-red-600 transition-colors">
+                    </div>
+
+                    <div class="w-48">
+                        <label class="block font-black text-sm mb-2 italic bg-black text-white w-max px-2">OWNER</label>
+                        <select id="search-owner-select" class="w-full bg-gray-100 border-b-4 border-black p-2 text-xl font-black italic outline-none cursor-none appearance-none rounded-none">
+                            <option value="ALL">ALL USERS</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="resetAndFetch()" onmousedown="playBeep(600,800)" class="gnu-btn gnu-btn-black px-8 py-3 text-xl">
+                        SEARCH
+                    </button>
+                    
+                    <button onclick="document.getElementById('csv-upload').click()" onmousedown="playBeep(900, 400)" class="gnu-btn gnu-btn-black px-8 py-3 text-xl">
+                        IMPORT CSV
+                    </button>
+                    <input type="file" id="csv-upload" accept=".csv" class="hidden" onchange="doImport()">
+
+                    <button onclick="openModal('create')" onmousedown="playBeep(900,1200)" class="gnu-btn gnu-btn-red px-8 py-3 text-xl">
+                        + NEW
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white border-[6px] border-black shadow-[15px_15px_0px_0px_rgba(220,38,38,1)] overflow-hidden mb-8">
+                <table class="w-full text-left gnu-table italic">
+                    <thead class="bg-black text-[#ffcc00]">
+                        <tr>
+                            <th class="w-20">ID</th>
+                            <th>Cover</th>
+                            <th>Artist / Title</th>
+                            <th>Year</th>
+                            <th>Owner</th>
+                            <th class="text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="album-tbody">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-center items-center gap-4 mb-20">
+                <button onclick="changePage('first')" class="gnu-btn gnu-btn-white px-4 py-2 text-lg">|&lt;</button>
+                <button onclick="changePage('prev')" class="gnu-btn gnu-btn-white px-4 py-2 text-lg">&lt;</button>
+                <span id="page-indicator" class="font-black italic text-2xl bg-black text-white px-6 py-2 rotate-[-2deg] shadow-lg">PAGE 1</span>
+                <button onclick="changePage('next')" class="gnu-btn gnu-btn-white px-4 py-2 text-lg">&gt;</button>
+                <button onclick="changePage('last')" class="gnu-btn gnu-btn-white px-4 py-2 text-lg">&gt;|</button>
+            </div>
+        </main>
+    </div>
+
+    <div id="editor-modal" class="fixed inset-0 modal-bg z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-[#ffcc00] border-[8px] border-black p-8 w-full max-w-lg shadow-[20px_20px_0px_0px_rgba(255,255,255,1)] relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-4xl font-black hover:text-red-600 cursor-none">&times;</button>
+            
+            <h2 id="modal-title" class="text-5xl font-black italic mb-6 border-b-4 border-black pb-2">EDIT DATA</h2>
+            <input type="hidden" id="edit-id">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="font-black text-xs block">ARTIST</label>
+                    <input type="text" id="edit-artist" class="w-full border-4 border-black p-3 font-bold text-xl uppercase outline-none focus:bg-white">
+                </div>
+                <div>
+                    <label class="font-black text-xs block">TITLE</label>
+                    <input type="text" id="edit-title" class="w-full border-4 border-black p-3 font-bold text-xl uppercase outline-none focus:bg-white">
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="font-black text-xs block">YEAR</label>
+                        <input type="number" id="edit-year" class="w-full border-4 border-black p-3 font-bold text-xl outline-none focus:bg-white">
+                    </div>
+                    <div class="flex-1">
+                        <label class="font-black text-xs block">OWNER</label>
+                        <select id="edit-owner-select" class="w-full border-4 border-black p-3 font-bold text-xl outline-none focus:bg-white appearance-none rounded-none cursor-none">
+                            </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="font-black text-xs block">COVER ART (UPLOAD)</label>
+                    <input type="file" id="edit-cover" accept="image/*" class="w-full border-4 border-black p-2 bg-white font-bold text-sm cursor-none">
+                </div>
+            </div>
+
+            <div class="mt-8 flex gap-4">
+                <button onclick="saveAlbum()" onmousedown="playBeep(600,900)" class="gnu-btn gnu-btn-black flex-1 py-4 text-2xl">SAVE DATA</button>
+                <button onclick="deleteAlbum()" id="btn-delete" class="gnu-btn gnu-btn-red px-6 py-4 text-xl">DEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:5082/api/albums";
+        const IMG_BASE = "http://localhost:5082/uploads/";
+        let currentUser = "GUEST";
+        let allAlbums = [];
+        let allOwners = new Set();
+        let currentPage = 1;
+        const pageSize = 10;
+        let isRegisterMode = false;
+
+        // 游標
+        const cursor = document.getElementById('custom-cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        // 音效
+        const playBeep = (f1, f2) => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = 'square';
+                const now = ctx.currentTime;
+                osc.frequency.setValueAtTime(f1, now);
+                osc.frequency.exponentialRampToValueAtTime(f2, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } catch(e){}
+        };
+
+        // 登入/註冊
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            const title = document.getElementById('auth-title');
+            const toggleText = document.getElementById('auth-toggle-text');
+            const toggleBtn = event.target;
+            if (isRegisterMode) {
+                title.innerText = "REGISTER";
+                toggleText.innerText = "ALREADY MEMBER?";
+                toggleBtn.innerText = "LOGIN HERE";
+            } else {
+                title.innerText = "LOGIN";
+                toggleText.innerText = "NEW HERE?";
+                toggleBtn.innerText = "CREATE ACCOUNT";
+            }
+        }
+
+        async function handleAuth() {
+            const nick = document.getElementById('nickname-input').value.trim();
+            const pass = document.getElementById('password-input').value;
+            if(!nick) { alert("NICKNAME REQUIRED"); return; }
+
+            if (isRegisterMode) {
+                // 這裡加入真實註冊 API 呼叫
+                alert(`WELCOME NEW MEMBER: ${nick.toUpperCase()}!`);
+                loginSuccess(nick);
+            } else {
+                // 這裡加入真實登入 API 呼叫
+                loginSuccess(nick);
+            }
+        }
+
+        function loginSuccess(nick) {
+            currentUser = nick.toUpperCase();
+            document.getElementById('user-display').innerText = `USER: ${currentUser}`;
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('main-page').classList.remove('hidden');
+            resetAndFetch();
+        }
+
+        function logout() { location.reload(); }
+
+        async function resetAndFetch() {
+            currentPage = 1;
+            await fetchAlbums();
+        }
+
+        async function fetchAlbums() {
+            const keyword = document.getElementById('search-input').value;
+            const ownerFilter = document.getElementById('search-owner-select').value;
+            
+            let url = API_URL + "?";
+            if(keyword) url += `search=${encodeURIComponent(keyword)}&`;
+            if(ownerFilter !== "ALL") url += `owner=${encodeURIComponent(ownerFilter)}`;
+
+            try {
+                const res = await fetch(url);
+                allAlbums = await res.json();
+                updateOwnerDropdowns(allAlbums);
+                renderTable();
+            } catch(err) { console.error(err); alert("CONNECT ERROR"); }
+        }
+
+        function updateOwnerDropdowns(albums) {
+            albums.forEach(a => { if(a.owner) allOwners.add(a.owner); });
+            if(currentUser !== "GUEST") allOwners.add(currentUser);
+            const sortedOwners = Array.from(allOwners).sort();
+
+            const searchSelect = document.getElementById('search-owner-select');
+            const currentSearch = searchSelect.value;
+            searchSelect.innerHTML = `<option value="ALL">ALL USERS</option>`;
+            sortedOwners.forEach(owner => {
+                searchSelect.innerHTML += `<option value="${owner}">${owner}</option>`;
+            });
+            searchSelect.value = currentSearch;
+
+            const editSelect = document.getElementById('edit-owner-select');
+            editSelect.innerHTML = "";
+            sortedOwners.forEach(owner => {
+                editSelect.innerHTML += `<option value="${owner}">${owner}</option>`;
+            });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('album-tbody');
+            tbody.innerHTML = "";
+            const totalPages = Math.ceil(allAlbums.length / pageSize) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            document.getElementById('page-indicator').innerText = `PAGE ${currentPage} / ${totalPages}`;
+
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageData = allAlbums.slice(start, end);
+
+            pageData.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="font-black text-xl">#${a.id}</td>
+                    <td><div class="w-12 h-12 bg-gray-200 border-2 border-black overflow-hidden"><img src="${a.coverFileName ? IMG_BASE + a.coverFileName : 'https://placehold.jp/150x150.png'}" class="w-full h-full object-cover"></div></td>
+                    <td><div class="text-xl font-black italic uppercase">${a.title}</div><div class="text-sm text-red-600 font-bold">${a.artist}</div></td>
+                    <td class="text-lg italic">${a.releaseYear}</td>
+                    <td><span class="bg-black text-white px-2 text-xs">${a.owner}</span></td>
+                    <td class="text-right">
+                        <button onclick='openModal("edit", ${JSON.stringify(a).replace(/'/g, "&#39;")})' class="border-2 border-black px-3 py-1 hover:bg-black hover:text-[#ffcc00] font-black transition cursor-none">EDIT</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function changePage(action) {
+            const totalPages = Math.ceil(allAlbums.length / pageSize) || 1;
+            if(action === 'first') currentPage = 1;
+            if(action === 'prev' && currentPage > 1) currentPage--;
+            if(action === 'next' && currentPage < totalPages) currentPage++;
+            if(action === 'last') currentPage = totalPages;
+            playBeep(400, 300);
+            renderTable();
+        }
+
+        function openModal(mode, data = null) {
+            const modal = document.getElementById('editor-modal');
+            const title = document.getElementById('modal-title');
+            const btnDel = document.getElementById('btn-delete');
+            const ownerSelect = document.getElementById('edit-owner-select');
+            
+            // 清空檔案欄位
+            document.getElementById('edit-cover').value = "";
+
+            modal.classList.remove('hidden');
+
+            if(mode === 'create') {
+                title.innerText = "NEW ENTRY";
+                btnDel.classList.add('hidden');
+                document.getElementById('edit-id').value = "";
+                document.getElementById('edit-artist').value = "";
+                document.getElementById('edit-title').value = "";
+                document.getElementById('edit-year').value = "2024";
+                ownerSelect.value = currentUser;
+            } else {
+                title.innerText = "EDIT DATA";
+                btnDel.classList.remove('hidden');
+                document.getElementById('edit-id').value = data.id;
+                document.getElementById('edit-artist').value = data.artist;
+                document.getElementById('edit-title').value = data.title;
+                document.getElementById('edit-year').value = data.releaseYear;
+                ownerSelect.value = data.owner;
+            }
+        }
+
+        function closeModal() { document.getElementById('editor-modal').classList.add('hidden'); }
+
+        // 3. 修正存檔邏輯 (支援 FormData 圖片上傳)
+        async function saveAlbum() {
+            const id = document.getElementById('edit-id').value;
+            const artist = document.getElementById('edit-artist').value;
+            const title = document.getElementById('edit-title').value;
+            const year = document.getElementById('edit-year').value;
+            const owner = document.getElementById('edit-owner-select').value;
+            const fileInput = document.getElementById('edit-cover');
+
+            if(!artist || !title) { alert("DATA MISSING"); return; }
+
+            // 使用 FormData 物件
+            const formData = new FormData();
+            formData.append("Artist", artist);
+            formData.append("Title", title);
+            formData.append("ReleaseYear", year);
+            formData.append("Owner", owner);
+            
+            // 如果有選圖片，就放進去
+            if(fileInput.files[0]) {
+                formData.append("Cover", fileInput.files[0]);
+            }
+
+            let url = API_URL; 
+            let method = "POST";
+            if(id) { 
+                url += `/${id}`; 
+                method = "PUT"; 
+                formData.append("Id", id);
+            }
+
+            try {
+                // 注意：使用 FormData 時，不要設定 Content-Type 為 application/json
+                const res = await fetch(url, { method: method, body: formData });
+                if(res.ok) { closeModal(); resetAndFetch(); } else { alert("SAVE FAILED"); }
+            } catch(e) { console.error(e); }
+        }
+
+        async function deleteAlbum() {
+            const id = document.getElementById('edit-id').value;
+            if(!confirm("DELETE THIS RECORD?")) return;
+            try {
+                const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+                if(res.ok) { closeModal(); resetAndFetch(); }
+            } catch(e) { console.error(e); }
+        }
+
+        // 2. 匯入 CSV 功能
+        async function doImport() {
+            const fileInput = document.getElementById("csv-upload");
+            if (!fileInput.files[0]) return;
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            playBeep(1000, 2000);
+            try {
+                const res = await fetch(`${API_URL}/Import`, { method: "POST", body: formData });
+                if (res.ok) { alert("IMPORT COMPLETE"); resetAndFetch(); } else { alert("IMPORT FAILED"); }
+            } catch (err) { alert("ERROR"); }
+            fileInput.value = "";
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# .NET 產生的執行檔與暫存
+[Bb]in/
+[Oo]bj/
+.vs/
+.vscode/
+
+# 個人設定檔與圖片上傳區
+*.user
+appsettings.Development.json
+wwwroot/images/*
+!wwwroot/images/.gitkeep

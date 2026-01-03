@@ -1,3 +1,4 @@
+using AlbumApi.Migrations; // 確保程式能抓到 Migrations 資料夾裡的檔案
 using AlbumApi.Data;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Pomelo.EntityFrameworkCore.MySql.Storage;
@@ -15,10 +16,18 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 // 註冊資料庫服務，使用 MySql
+// builder.Services.AddDbContext<AlbumContext>(options =>
+// {
+//     options.UseMySql(connectionString,
+//         ServerVersion.AutoDetect(connectionString),
+//         mySqlOptions => mySqlOptions.EnableRetryOnFailure());
+// });
+// 註冊資料庫服務，手動指定版本 (MariaDB 或 MySql 8.0)
 builder.Services.AddDbContext<AlbumContext>(options =>
 {
-    options.UseMySql(connectionString,
-        ServerVersion.AutoDetect(connectionString),
+    // Railway 的 MySQL 基礎通常是 8.0.x
+    var serverVersion = new MySqlServerVersion(new Version(8, 0, 0)); 
+    options.UseMySql(connectionString, serverVersion,
         mySqlOptions => mySqlOptions.EnableRetryOnFailure());
 });
 

@@ -544,8 +544,13 @@
 
     <script>
       // 注意：發布到網路時，這裡的 localhost 要改成你的電腦 IP 或域名
-      const API_URL = "http://localhost:5082/api/albums";
-      const AUTH_URL = "http://localhost:5082/api/Account";
+      // const API_URL = "http://localhost:5082/api/albums";
+      // const AUTH_URL = "http://localhost:5082/api/Account";
+      // 正式用連線
+      const API_URL =
+        "https://albumapi-web-production.up.railway.app/api/albums";
+      const AUTH_URL =
+        "https://albumapi-web-production.up.railway.app/api/account";
       const IMG_BASE = "http://localhost:5082/images/";
       let currentUser = "GUEST";
       let allAlbums = [];

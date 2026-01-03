@@ -7,6 +7,10 @@ using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 強制讓程式監聽 Railway 分配的 Port
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // 從 appsettings.json 讀取連線字串
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 

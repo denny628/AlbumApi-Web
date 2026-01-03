@@ -23,7 +23,8 @@ builder.Services.AddDbContext<AlbumContext>(options =>
 });
 
 // 1. 註冊 Identity 服務 (調整為極簡模式)
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options => {
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+{
     // --- 密碼規則極簡化 ---
     options.Password.RequireDigit = false;             // 不需要數字
     options.Password.RequiredLength = 1;              // 長度只要 1 位以上即可
@@ -31,7 +32,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options => {
     options.Password.RequireUppercase = false;         // 不需要大寫字母
     options.Password.RequireLowercase = false;         // 不需要小寫字母
     options.Password.RequiredUniqueChars = 0;          // 不需要包含不同類型的字元
-    
+
     // --- 使用者規則 ---
     options.User.RequireUniqueEmail = true;            // 確保 Email 不重複即可
 })
@@ -62,10 +63,26 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
+// 1. 設定 HTTP 請求
 var app = builder.Build();
 
-// 1. 設定 HTTP 請求管線
+// --- 加上這段：自動執行資料庫遷移 ---
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AlbumContext>();
+        context.Database.Migrate();
+        Console.WriteLine("資料庫遷移成功！資料表已建立。");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"資料庫遷移失敗: {ex.Message}");
+    }
+}
+// ----------------------------------
+
 
 // 放在最上面，確保流量被重導向 HTTPS (雖然目前在 HTTP 測試)
 app.UseHttpsRedirection();

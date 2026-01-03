@@ -70,16 +70,16 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    try
-    {
+    // try
+    // {
         var context = services.GetRequiredService<AlbumContext>();
         context.Database.Migrate();
         Console.WriteLine("資料庫遷移成功！資料表已建立。");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"資料庫遷移失敗: {ex.Message}");
-    }
+    // }
+    // catch (Exception ex)
+    // {
+    //     Console.WriteLine($"資料庫遷移失敗: {ex.Message}");
+    // }
 }
 // ----------------------------------
 

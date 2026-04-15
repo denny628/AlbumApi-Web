@@ -1,98 +1,80 @@
 using AlbumApi.Data;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
-using Pomelo.EntityFrameworkCore.MySql.Storage;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Builder; // 確保這個命名空間在最上面
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 從 appsettings.json 讀取連線字串
+// 1. 設定 Port (讓 Railway 和本地都能跑)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
+// 2. 資料庫連線設定 (關鍵修復：防止崩潰)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// 註冊資料庫服務，使用 MySql
-builder.Services.AddDbContext<AlbumContext>(options =>
-{
-    options.UseMySql(connectionString,
-        ServerVersion.AutoDetect(connectionString),
-        mySqlOptions => mySqlOptions.EnableRetryOnFailure());
-});
+// 強制指定 Railway 預設的 MySQL 8.0 主版本
+// var serverVersion = new MySqlServerVersion(new Version(8, 0, 33));
 
-// 1. 註冊 Identity 服務 (調整為極簡模式)
+// 請將 AppDbContext 替換為你實際定義的 DbContext 類別名稱 (如位於 Data 資料夾下的 Context)
+builder.Services.AddDbContext<AlbumContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// 3. 註冊使用者系統 (Identity)
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options => {
-    // --- 密碼規則極簡化 ---
-    options.Password.RequireDigit = false;             // 不需要數字
-    options.Password.RequiredLength = 1;              // 長度只要 1 位以上即可
-    options.Password.RequireNonAlphanumeric = false;    // 不需要特殊符號 (@#$!)
-    options.Password.RequireUppercase = false;         // 不需要大寫字母
-    options.Password.RequireLowercase = false;         // 不需要小寫字母
-    options.Password.RequiredUniqueChars = 0;          // 不需要包含不同類型的字元
-    
-    // --- 使用者規則 ---
-    options.User.RequireUniqueEmail = true;            // 確保 Email 不重複即可
+    // 密碼設定寬鬆一點，方便測試
+    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 1;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
 })
 .AddEntityFrameworkStores<AlbumContext>()
 .AddDefaultTokenProviders();
 
-// 設定 CORS 政策名稱
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
-
-// 新增 CORS 服務
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-                      policy =>
-                      {
-                          policy.AllowAnyOrigin()
-                                .AllowAnyHeader()
-                                .AllowAnyMethod();
-                      });
-});
-
-
-// 🚨 修正：只保留一次 AddControllers()
 builder.Services.AddControllers();
-
-// Add services to the container.
-// Swagger 服務
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// 4. 開放跨域限制 (CORS) - 讓前端可以順利呼叫
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy => { policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod(); });
+});
 
 var app = builder.Build();
 
-// 1. 設定 HTTP 請求管線
+// --- 5. 關鍵魔法：啟動時自動修復資料庫 ---
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AlbumContext>();
+        // 這行會自動建立資料表！如果本地登入失敗，跑這行就會修好
+        context.Database.Migrate();
+        Console.WriteLine("✅ 資料庫遷移成功！");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️ 資料庫遷移訊息: {ex.Message}");
+    }
+}
+// ---------------------------------------
 
-// 放在最上面，確保流量被重導向 HTTPS (雖然目前在 HTTP 測試)
 app.UseHttpsRedirection();
 
-// 2. Swagger 應該在開發模式下盡早啟動
+// 這行告訴 API：「請開放 wwwroot 資料夾讓外部讀取靜態檔案 (如圖片)」
+app.UseStaticFiles();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 3. 啟用靜態檔案服務 (圖片和 index.html)
-app.UseStaticFiles();
-
-// 4. 路由選擇中介軟體
-app.UseRouting();
-
-// 5. 授權/安全相關中介軟體 (必須在 UseRouting 和 MapControllers 之間)
-app.UseCors(MyAllowSpecificOrigins);
-
-app.UseAuthentication(); // 認證：判斷使用者是誰
-
+app.UseCors("AllowAll");
+app.UseAuthentication();
 app.UseAuthorization();
-
-
-// 6. 控制器映射與端點執行 (執行路由系統選擇的端點)
 app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

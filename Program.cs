@@ -43,6 +43,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// --- 關鍵兩行開始 ---
+app.UseDefaultFiles(); // 這會讓 "/" 自動尋找 "index.html"
+app.UseStaticFiles();  // 這才允許存取 wwwroot 內的靜態檔案
+// --- 關鍵兩行結束 ---
+
 // --- 5. 關鍵魔法：啟動時自動修復資料庫 ---
 using (var scope = app.Services.CreateScope())
 {
@@ -62,9 +67,6 @@ using (var scope = app.Services.CreateScope())
 // ---------------------------------------
 
 app.UseHttpsRedirection();
-
-// 這行告訴 API：「請開放 wwwroot 資料夾讓外部讀取靜態檔案 (如圖片)」
-app.UseStaticFiles();
 
 if (app.Environment.IsDevelopment())
 {
